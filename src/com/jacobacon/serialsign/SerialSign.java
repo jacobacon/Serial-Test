@@ -1,7 +1,6 @@
 package com.jacobacon.serialsign;
 
-import java.math.BigInteger;
-import java.nio.charset.Charset;
+import java.util.Scanner;
 
 import jssc.SerialPort;
 import jssc.SerialPortException;
@@ -10,33 +9,36 @@ public class SerialSign {
 
 	public static void main(String[] args) {
 		String port = "COM3";
-		SerialPort serialPort = new SerialPort(port);
+		String message = "Hello!";
 
-		String message = "Dad is a dork!";
+		SerialPort serialPort = new SerialPort(port);
+		Scanner scan = new Scanner(System.in);
+
+		System.out.println("Message: ");
+		message = scan.nextLine();
 
 		byte[] bytes = new byte[message.length() + 17];
 
+		writeMessage(message, serialPort, bytes);
+
+	}
+
+	public static void writeMessage(String message, SerialPort serialPort,
+			byte[] bytes) {
 		try {
 			// Write the actual data
-			System.out.println("Port Opened: " + serialPort.openPort()); // Open
-																			// Port
-																			// Again
-			System.out.println("Params setted: "
-					+ serialPort.setParams(2400, 8, 1, 0)); // Set Params
-			System.out.println("Purge Ports: "
-					+ serialPort.purgePort(SerialPort.PURGE_TXABORT)); // Purge
-																		// old
-																		// data.
-			System.out.println("Purge Ports: "
-					+ serialPort.purgePort(SerialPort.PURGE_RXABORT));
-			System.out.println("Purge Ports: "
-					+ serialPort.purgePort(SerialPort.PURGE_RXCLEAR));
+
+			serialPort.openPort(); // Open Port
+			serialPort.setParams(2400, 8, 1, 0); // Set Params
+
+			// The Following is NEEDED in order to notify the sign of the
+			// incoming message. DO NOT EDIT
 
 			bytes[0] = 0; // 00
 			bytes[1] = (byte) 255; // FF
 			bytes[2] = (byte) 255; // FF
 			bytes[3] = 0; // 00
-			bytes[4] = 11; // 0B
+			bytes[4] = 11; // 0Bmmm
 			bytes[5] = 1; // 01
 			bytes[6] = (byte) 255; // FF
 			bytes[7] = 1; // 01
@@ -46,6 +48,9 @@ public class SerialSign {
 			bytes[11] = (byte) 176; // B0
 			bytes[12] = (byte) 239; // EF
 			bytes[13] = (byte) 162; // A2
+
+			// The Above is NEEDED in order to notify the sign of the incoming
+			// message. DO NOT EDIT
 
 			byte[] messageArray = new byte[message.length()];
 
@@ -60,35 +65,21 @@ public class SerialSign {
 			}
 
 			// End Message
+
+			// The Following is NEEDED in order to notify the sign of the
+			// incoming message. DO NOT EDIT
 			bytes[bytes.length - 3] = (byte) 255;
 			bytes[bytes.length - 2] = (byte) 255;
 			bytes[bytes.length - 1] = 0;
+			// The Above is NEEDED in order to notify the sign of the incoming
+			// message. DO NOT EDIT
 
-			System.out
-					.println("\"Hello World!!!\" successfully writen to port: "
-							+ serialPort.writeBytes(bytes));
-			System.out.println("Port closed: " + serialPort.closePort());
-
-			System.out.println("Bytes: " + bytes.length);
-			System.out.println("Message Length: " + message.length());
-
-			for (int i = 0; i < bytes.length; i++) {
-				System.out.println(bytes[i]);
-			}
+			serialPort.writeBytes(bytes);
+			serialPort.closePort();
 
 		} catch (SerialPortException e) {
 			System.out.println(e);
 		}
-	}
-
-	public static String toHex(String word) {
-		return String.format("%x",
-				new BigInteger(1, word.getBytes(Charset.defaultCharset())));
-	}
-
-	public static int toDigit(char c) {
-		int value = c;
-		return value;
 	}
 
 }
